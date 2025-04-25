@@ -1,4 +1,4 @@
-use vizia::{prelude::*, vg::Size};
+use vizia::prelude::*;
 
 #[derive(Debug, Clone)]
 struct Todo {
@@ -15,6 +15,7 @@ impl Data for Todo {
 struct AppData {
     todos: Vec<Todo>,
     current_data: String,
+    edit_window_open: bool,
 }
 impl Model for AppData {
     fn event(&mut self, _: &mut EventContext, event: &mut Event) {
@@ -26,7 +27,12 @@ impl Model for AppData {
                 println!("{:?}", self.todos)
             }
             AppEvent::SetInputValue(value) => self.current_data = value.to_string(),
-            AppEvent::UpdateItem(i) => self.todos[*i].title = "ok".to_owned(),
+            AppEvent::UpdateItem(i) => {
+                self.todos[*i].title = "ok".to_owned();
+                println!("{:?}", self.todos)
+            }
+
+            AppEvent::OpenEditWindow => self.edit_window_open = true,
         });
     }
 }
@@ -35,6 +41,7 @@ pub enum AppEvent {
     AddTodo,
     SetInputValue(String),
     UpdateItem(usize),
+    OpenEditWindow,
 }
 
 fn main() -> Result<(), ApplicationError> {
@@ -42,6 +49,7 @@ fn main() -> Result<(), ApplicationError> {
         AppData {
             todos: Vec::new(),
             current_data: "Hello, world".to_owned(),
+            edit_window_open: false,
         }
         .build(cx);
 
@@ -49,6 +57,19 @@ fn main() -> Result<(), ApplicationError> {
             .expect("Failed to load stylesheet");
 
         VStack::new(cx, |cx| {
+            Button::new(cx, |cx| Label::new(cx, "Create new Todo"))
+                .on_press(|cx| cx.emit(AppEvent::OpenEditWindow));
+
+            Binding::new(cx, AppData::edit_window_open, |cx, show_subwindow| {
+                if show_subwindow.get(cx) {
+                    Window::new(cx, |cx| {
+                        Label::new(cx, "Hello, world!");
+                    })
+                    .title("Set color...")
+                    .inner_size((400, 200));
+                }
+            });
+
             Label::new(cx, "Vizia TODO")
                 .class("header")
                 .font_size(25)
@@ -73,14 +94,14 @@ fn main() -> Result<(), ApplicationError> {
                     // println!("{}", x.title.clone());
                     Label::new(cx, x.title.clone());
                     Button::new(cx, |cx| {
-                        let index = i;
                         Svg::new(cx, *include_bytes!("../resources/images/pencil.svg"))
                             .size(Pixels(25.0))
-                            .on_press(move |ex| ex.emit(AppEvent::UpdateItem(index)))
+
                         //.border_color(Color::red())
                         //.border_width(Pixels(1.0))
                         // background_color(Color::white())
-                    });
+                    })
+                    .on_press(move |ex| ex.emit(AppEvent::UpdateItem(i)));
                 });
             });
         })
