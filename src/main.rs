@@ -1,4 +1,4 @@
-use vizia::prelude::*;
+use vizia::{prelude::*, vg::Size};
 
 #[derive(Debug, Clone)]
 struct Todo {
@@ -26,6 +26,7 @@ impl Model for AppData {
                 println!("{:?}", self.todos)
             }
             AppEvent::SetInputValue(value) => self.current_data = value.to_string(),
+            AppEvent::UpdateItem(i) => self.todos[*i].title = "ok".to_owned(),
         });
     }
 }
@@ -33,6 +34,7 @@ impl Model for AppData {
 pub enum AppEvent {
     AddTodo,
     SetInputValue(String),
+    UpdateItem(usize),
 }
 
 fn main() -> Result<(), ApplicationError> {
@@ -67,9 +69,18 @@ fn main() -> Result<(), ApplicationError> {
             .gap(Pixels(10.0));
 
             Binding::new(cx, AppData::todos, |cx, s| {
-                s.get(cx).iter().for_each(|x| {
+                s.get(cx).iter().enumerate().for_each(|(i, x)| {
                     // println!("{}", x.title.clone());
                     Label::new(cx, x.title.clone());
+                    Button::new(cx, |cx| {
+                        let index = i;
+                        Svg::new(cx, *include_bytes!("../resources/images/pencil.svg"))
+                            .size(Pixels(25.0))
+                            .on_press(move |ex| ex.emit(AppEvent::UpdateItem(index)))
+                        //.border_color(Color::red())
+                        //.border_width(Pixels(1.0))
+                        // background_color(Color::white())
+                    });
                 });
             });
         })
